@@ -15,7 +15,15 @@
 		"commands": [
 			{
 				"command": "scss-module-opener.helloWorld",
-				"title": "Hello World"
+				"title": "ScssModuleOpener: Hello World"
+			},
+			{
+				"command": "scss-module-opener.autoOnOff",
+				"title": "ScssModuleOpener: Auto On/Off"
+			},
+			{
+				"command": "scss-module-opener.logOnOff",
+				"title": "ScssModuleOpener: Log On/Off"
 			}
 		]
 	},

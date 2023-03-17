@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
 import { writeFileSync, appendFileSync } from 'node:fs';
 
+const build = 5;
+let lastFile = '';
+let openFiles = false;
+let canLog = false;
+
 log('Loaded: scss-module-opener!');
 
 export function activate(context: vscode.ExtensionContext) {
@@ -12,13 +17,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	log('getWorkspacePath', getWorkspacePath());
 
-	onActivate(context);
+	onEditors(context);
+	onSwitch(context);
 
 	const disposable = vscode.commands.registerCommand(
 		'scss-module-opener.helloWorld',
 		() => {
-			// The code you place here will be executed every time your command is executed
-			// Display a message box to the user
 			vscode.window.showInformationMessage(
 				'Hello World from scss-module-opener!'
 			);
@@ -28,45 +32,91 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
 
-function onActivate(context: vscode.ExtensionContext) {
-	let activeEditor = vscode.window.activeTextEditor;
+function onSwitch(context: vscode.ExtensionContext) {
+	context.subscriptions.push(
+		vscode.commands.registerCommand('scss-module-opener.autoOnOff', () => {
+			openFiles = !openFiles;
 
+			vscode.window.showInformationMessage(`openFiles: ${openFiles}`);
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('scss-module-opener.logOnOff', () => {
+			canLog = !canLog;
+
+			vscode.window.showInformationMessage(`canLog: ${canLog}`);
+		})
+	);
+}
+
+function onEditors(context: vscode.ExtensionContext) {
 	log('Hello World from scss-module-opener!');
 
-	vscode.window.onDidChangeActiveTextEditor((editor) => {
-		activeEditor = editor;
+	context.subscriptions.push(
+		vscode.window.onDidChangeActiveTextEditor(openStyle)
+	);
 
-		if (activeEditor) {
-			const currentFilePath = activeEditor.document.fileName;
+	// context.subscriptions.push(
+	// 	vscode.workspace.onDidOpenTextDocument((a) => {
+	// 		log('onDidOpenTextDocument', a.fileName);
+	// 	})
+	// );
+}
 
-			log('currentFilePath', currentFilePath);
+function openStyle(editor: vscode.TextEditor | undefined) {
+	const activeEditor = editor;
 
-			if (currentFilePath.endsWith('.tsx')) {
-				const scssFilePath = currentFilePath.replace(
-					/\.tsx$/,
-					'.module.scss'
-				);
+	if (activeEditor) {
+		openFile(activeEditor.document.fileName);
+	}
+}
 
-				log('scssFilePath', scssFilePath);
+function openFile(currentFilePath: string) {
+	if (!openFiles) {
+		return;
+	}
 
-				vscode.workspace
-					.openTextDocument(scssFilePath)
-					.then((document) => {
-						log('openTextDocument', scssFilePath);
+	log('currentFilePath', currentFilePath);
 
-						vscode.window.showTextDocument(document, {
-							viewColumn: vscode.ViewColumn.Beside,
-						});
-					});
-			}
+	let openPath: null | string = null;
+	let viewColumn = vscode.ViewColumn.Beside;
+
+	if (currentFilePath.endsWith('.tsx')) {
+		viewColumn = vscode.ViewColumn.Two;
+		openPath = currentFilePath.replace(/\.tsx$/, '.module.scss');
+	} else if (currentFilePath.endsWith('.module.scss')) {
+		viewColumn = vscode.ViewColumn.One;
+		openPath = currentFilePath.replace(/\.module\.scss$/, '.tsx');
+	} else if (currentFilePath.endsWith('.module.css')) {
+		openPath = currentFilePath.replace(/\.module\.css$/, '.tsx');
+	}
+
+	if (openPath !== null && openPath !== lastFile) {
+		if (!locateFile(openPath)) {
+			log('scssFilePath', { openPath, viewColumn, lastFile });
+
+			lastFile = openPath;
+
+			vscode.workspace.openTextDocument(openPath).then((document) => {
+				log('openTextDocument', openPath);
+
+				vscode.window.showTextDocument(document, {
+					viewColumn,
+					preserveFocus: true,
+				});
+			});
 		}
-	});
+	}
 }
 
 function log(msg: string, obj?: any) {
+	if (!canLog) {
+		return;
+	}
+
 	// writeFileSync('/home/godzzo/base.txt', process.cwd());
 
 	const json = obj ? JSON.stringify(obj, null, 4) : '';
@@ -82,6 +132,7 @@ function log(msg: string, obj?: any) {
 		JSON.stringify(
 			{
 				date: new Date().toISOString(),
+				build,
 				msg,
 				obj,
 			},
@@ -89,6 +140,16 @@ function log(msg: string, obj?: any) {
 			4
 		)
 	);
+}
+
+function locateFile(file: string) {
+	const editors = vscode.window.visibleTextEditors.map(
+		(editor) => editor.document.fileName
+	);
+
+	log('opened editors', { editors, file });
+
+	return editors.some((uri) => uri === file);
 }
 
 function getWorkspacePath() {
