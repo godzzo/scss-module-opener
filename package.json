@@ -1,8 +1,13 @@
 {
 	"name": "scss-module-opener",
+	"publisher": "godzzo",
 	"displayName": "scss-module-opener",
-	"description": "Find the scss module for the currently editing file",
+	"description": "Find the scss module for the currently editing tsx file",
 	"version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/godzzo/scss-module-opener"
+	},
 	"engines": {
 		"vscode": "^1.76.0"
 	},
@@ -15,7 +20,7 @@
 		"commands": [
 			{
 				"command": "scss-module-opener.helloWorld",
-				"title": "ScssModuleOpener: Hello World"
+				"title": "ScssModuleOpener: Hello World - Initialize"
 			},
 			{
 				"command": "scss-module-opener.autoOnOff",
