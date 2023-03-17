@@ -1,20 +1,20 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { writeFileSync, appendFileSync } from 'node:fs';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+log('Loaded: scss-module-opener!');
+
 export function activate(context: vscode.ExtensionContext) {
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log(
 		'Congratulations, your extension "scss-module-opener" is now active!'
 	);
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand(
+	log('activate from scss-module-opener!');
+
+	log('getWorkspacePath', getWorkspacePath());
+
+	onActivate(context);
+
+	const disposable = vscode.commands.registerCommand(
 		'scss-module-opener.helloWorld',
 		() => {
 			// The code you place here will be executed every time your command is executed
@@ -30,3 +30,73 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
+
+function onActivate(context: vscode.ExtensionContext) {
+	let activeEditor = vscode.window.activeTextEditor;
+
+	log('Hello World from scss-module-opener!');
+
+	vscode.window.onDidChangeActiveTextEditor((editor) => {
+		activeEditor = editor;
+
+		if (activeEditor) {
+			const currentFilePath = activeEditor.document.fileName;
+
+			log('currentFilePath', currentFilePath);
+
+			if (currentFilePath.endsWith('.tsx')) {
+				const scssFilePath = currentFilePath.replace(
+					/\.tsx$/,
+					'.module.scss'
+				);
+
+				log('scssFilePath', scssFilePath);
+
+				vscode.workspace
+					.openTextDocument(scssFilePath)
+					.then((document) => {
+						log('openTextDocument', scssFilePath);
+
+						vscode.window.showTextDocument(document, {
+							viewColumn: vscode.ViewColumn.Beside,
+						});
+					});
+			}
+		}
+	});
+}
+
+function log(msg: string, obj?: any) {
+	// writeFileSync('/home/godzzo/base.txt', process.cwd());
+
+	const json = obj ? JSON.stringify(obj, null, 4) : '';
+
+	vscode.window.showInformationMessage(msg + ': ' + json);
+
+	console.log(msg, obj);
+
+	const path = getWorkspacePath() ?? '.';
+
+	appendFileSync(
+		`${path}/scss-module-opener.log`,
+		JSON.stringify(
+			{
+				date: new Date().toISOString(),
+				msg,
+				obj,
+			},
+			null,
+			4
+		)
+	);
+}
+
+function getWorkspacePath() {
+	const workspaceFolders = vscode.workspace.workspaceFolders;
+
+	if (workspaceFolders && workspaceFolders.length > 0) {
+		const workspaceFolder = workspaceFolders[0];
+
+		return workspaceFolder.uri.fsPath;
+	}
+}
