@@ -98,6 +98,7 @@ function openFile(currentFilePath: string) {
 		if (!locateFile(openPath)) {
 			log('scssFilePath', { openPath, viewColumn, lastFile });
 
+			// TODO: It is not working ❗️ probably because of the async
 			lastFile = openPath;
 
 			vscode.workspace.openTextDocument(openPath).then((document) => {
@@ -147,8 +148,10 @@ function locateFile(file: string) {
 		(editor) => editor.document.fileName
 	);
 
+	// TODO: Only show one file, not all opened files 🤔
 	log('opened editors', { editors, file });
 
+	// TODO: So it is not working ❗️ editors only contains the current file ...
 	return editors.some((uri) => uri === file);
 }
 
